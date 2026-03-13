@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Setoran Zakat 2026</title>
+    <title>Dashboard BAZNAS 2026</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -231,6 +231,17 @@
                 </div>
             </div>
 
+            <!-- Horizontal Bar Chart (Instansi) -->
+            <div class="premium-card rounded-2xl p-6 mb-8 fade-in-up delay-300">
+                <div class="mb-6">
+                    <h2 class="text-lg font-bold text-slate-900">Jumlah Pembayar per Sekolah/Instansi</h2>
+                    <p class="text-sm text-slate-500">Top 10 sekolah/lembaga dengan jumlah penyetor zakat terbanyak</p>
+                </div>
+                <div class="relative w-full h-80">
+                    <canvas id="chartInstansi"></canvas>
+                </div>
+            </div>
+
             <!-- Data Table with Filter & Pagination -->
             <div class="premium-card rounded-2xl overflow-hidden flex flex-col fade-in-up delay-300">
                 <!-- Toolbar: Title & Filters -->
@@ -243,17 +254,35 @@
                         
                         <!-- Filters -->
                         <div class="flex flex-col sm:flex-row gap-3">
-                            <select id="filterBulan" class="bg-white border border-slate-300 text-slate-700 text-sm rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 block p-2.5 transition-shadow cursor-pointer">
-                                <option value="">Semua Bulan</option>
-                            </select>
+                            <!-- Filter Bulan Dropdown Custom -->
+                            <div class="relative w-full sm:w-48" id="wrapperBulan">
+                                <button onclick="toggleDropdown('dropdownBulan')" class="bg-white border border-slate-300 text-slate-700 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 flex justify-between items-center p-2.5 w-full transition-shadow">
+                                    <span id="labelBulan" class="truncate">Semua Bulan</span>
+                                    <i class="fa-solid fa-chevron-down text-slate-400 ml-2 text-xs"></i>
+                                </button>
+                                <div id="dropdownBulan" class="hidden absolute z-50 w-full bg-white border border-slate-200 shadow-xl rounded-lg mt-1 max-h-60 overflow-y-auto">
+                                    <div class="p-1.5 space-y-0.5" id="listBulan">
+                                        <!-- Checkboxes inject by JS -->
+                                    </div>
+                                </div>
+                            </div>
                             
-                            <select id="filterKota" class="bg-white border border-slate-300 text-slate-700 text-sm rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 block p-2.5 transition-shadow cursor-pointer">
-                                <option value="">Semua Wilayah</option>
-                            </select>
+                            <!-- Filter Kota Dropdown Custom -->
+                            <div class="relative w-full sm:w-48" id="wrapperKota">
+                                <button onclick="toggleDropdown('dropdownKota')" class="bg-white border border-slate-300 text-slate-700 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 flex justify-between items-center p-2.5 w-full transition-shadow">
+                                    <span id="labelKota" class="truncate">Semua Wilayah</span>
+                                    <i class="fa-solid fa-chevron-down text-slate-400 ml-2 text-xs"></i>
+                                </button>
+                                <div id="dropdownKota" class="hidden absolute z-50 w-full bg-white border border-slate-200 shadow-xl rounded-lg mt-1 max-h-60 overflow-y-auto">
+                                    <div class="p-1.5 space-y-0.5" id="listKota">
+                                        <!-- Checkboxes inject by JS -->
+                                    </div>
+                                </div>
+                            </div>
 
-                            <div class="relative">
+                            <div class="relative flex-1">
                                 <input type="text" id="searchInput" placeholder="Cari Nama/Instansi..." class="bg-white pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 w-full sm:w-64 transition-shadow">
-                                <i class="fa-solid fa-search absolute left-3.5 top-3 text-slate-400"></i>
+                                <i class="fa-solid fa-search absolute left-3.5 top-3.5 text-slate-400"></i>
                             </div>
                         </div>
                     </div>
@@ -312,7 +341,7 @@
     <!-- Footer -->
     <footer class="bg-transparent mt-auto py-8">
         <div class="max-w-7xl mx-auto px-4 text-center text-sm font-medium text-slate-400">
-            &copy; 2026 Sistem Informasi Pengelolaan Zakat. <br class="sm:hidden"/> Crafted with <i class="fa-solid fa-heart text-red-400 mx-1"></i> for transparency.
+            &copy; 2026 BAZNAS - Sistem Informasi Pengelolaan Zakat. <br class="sm:hidden"/> Crafted with <i class="fa-solid fa-heart text-red-400 mx-1"></i> for transparency.
         </div>
     </footer>
 
@@ -343,6 +372,7 @@
         let filteredData = [];
         let chartBulanInstance = null;
         let chartKotaInstance = null;
+        let chartInstansiInstance = null;
         let currentPage = 1;
         let rowsPerPage = 10;
 
@@ -354,6 +384,8 @@
            3. FUNGSI UTILITAS: ANIMASI ANGKA & EXPORT CSV
            ========================================================= */
         function animateValue(obj, start, end, duration, isCurrency = false) {
+            if (obj.animationId) cancelAnimationFrame(obj.animationId);
+            
             let startTimestamp = null;
             const step = (timestamp) => {
                 if (!startTimestamp) startTimestamp = timestamp;
@@ -365,13 +397,13 @@
                 obj.innerHTML = isCurrency ? formatRupiah(currentVal) : currentVal;
                 
                 if (progress < 1) {
-                    window.requestAnimationFrame(step);
+                    obj.animationId = window.requestAnimationFrame(step);
                 } else {
                     obj.innerHTML = isCurrency ? formatRupiah(end) : end;
                     obj.dataset.value = end; // Simpan nilai akhir
                 }
             };
-            window.requestAnimationFrame(step);
+            obj.animationId = window.requestAnimationFrame(step);
         }
 
         function downloadCSV() {
@@ -433,7 +465,8 @@
                 globalData = MOCK_DATA.reverse(); // Fallback ke mock data
                 alertError.classList.remove('hidden');
             } finally {
-                processDashboardData(globalData);
+                populateFilters();
+                applyFilters(); // Memicu re-render semua komponen
                 
                 setTimeout(() => {
                     loadingScreen.classList.add('hidden');
@@ -447,7 +480,7 @@
         /* =========================================================
            5. PEMROSESAN DATA UTAMA
            ========================================================= */
-        function processDashboardData(data) {
+        function updateDashboardComponents(data) {
             let totalZakat = 0;
             let instansiSet = new Set();
             let kotaSet = new Set();
@@ -455,12 +488,20 @@
             
             let dataPerBulan = { "JANUARI": 0, "FEBRUARI": 0, "MARET": 0, "APRIL": 0, "MEI": 0 };
             let dataPerKota = {};
+            let penyetorPerInstansi = {};
 
             data.forEach(row => {
                 const zakat = parseInt(row.zakat) || 0;
                 totalZakat += zakat;
                 
-                if(row.nama_instansi) instansiSet.add(row.nama_instansi.trim());
+                if(row.nama_instansi) {
+                    let instansi = row.nama_instansi.trim();
+                    instansiSet.add(instansi);
+                    if(row.nama_penyetor) {
+                        penyetorPerInstansi[instansi] = (penyetorPerInstansi[instansi] || 0) + 1;
+                    }
+                }
+                
                 if(row.kota_kabupaten) {
                     let kota = row.kota_kabupaten.trim();
                     kotaSet.add(kota);
@@ -484,20 +525,23 @@
             const elInstansi = document.getElementById('stat-total-instansi');
             const elKota = document.getElementById('stat-total-kota');
 
-            animateValue(elZakat, 0, totalZakat, 1500, true);
-            animateValue(elPenyetor, 0, penyetorSet.size, 1000, false);
-            animateValue(elInstansi, 0, instansiSet.size, 1000, false);
-            animateValue(elKota, 0, kotaSet.size, 1000, false);
+            const startZakat = parseInt(elZakat.dataset.value) || 0;
+            const startPenyetor = parseInt(elPenyetor.dataset.value) || 0;
+            const startInstansi = parseInt(elInstansi.dataset.value) || 0;
+            const startKota = parseInt(elKota.dataset.value) || 0;
+
+            animateValue(elZakat, startZakat, totalZakat, 800, true);
+            animateValue(elPenyetor, startPenyetor, penyetorSet.size, 800, false);
+            animateValue(elInstansi, startInstansi, instansiSet.size, 800, false);
+            animateValue(elKota, startKota, kotaSet.size, 800, false);
 
             // Render Grafik
             renderChartBulan(dataPerBulan);
             renderChartKota(dataPerKota);
-
-            // Populasikan Opsi Filter (Tanpa mereset pilihan jika sudah ada)
-            populateFilters();
+            renderChartInstansi(penyetorPerInstansi);
 
             // Eksekusi Render Tabel
-            applyFilters();
+            renderTable();
         }
 
         /* =========================================================
@@ -588,56 +632,142 @@
             });
         }
 
+        function renderChartInstansi(dataObj) {
+            const ctx = document.getElementById('chartInstansi').getContext('2d');
+            
+            // Sort data untuk visualisasi Top 10 instansi terbanyak
+            let sortedArr = Object.entries(dataObj).sort((a,b) => b[1] - a[1]).slice(0, 10);
+            const labels = sortedArr.map(item => item[0]);
+            const values = sortedArr.map(item => item[1]);
+
+            if(chartInstansiInstance) chartInstansiInstance.destroy();
+
+            // Kombinasi palet warna modern yang berbeda untuk setiap bar
+            const baseColors = [
+                'rgba(59, 130, 246, 0.85)', 'rgba(16, 185, 129, 0.85)', 'rgba(245, 158, 11, 0.85)', 
+                'rgba(239, 68, 68, 0.85)', 'rgba(139, 92, 246, 0.85)', 'rgba(6, 182, 212, 0.85)', 
+                'rgba(236, 72, 153, 0.85)', 'rgba(249, 115, 22, 0.85)', 'rgba(20, 184, 166, 0.85)', 
+                'rgba(99, 102, 241, 0.85)'
+            ];
+            const hoverColors = [
+                '#2563eb', '#059669', '#d97706', '#dc2626', '#7c3aed',
+                '#0891b2', '#db2777', '#ea580c', '#0d9488', '#4f46e5'
+            ];
+
+            chartInstansiInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Jumlah Penyetor',
+                        data: values,
+                        backgroundColor: baseColors.slice(0, labels.length),
+                        hoverBackgroundColor: hoverColors.slice(0, labels.length),
+                        borderRadius: 6,
+                        barPercentage: 0.6
+                    }]
+                },
+                options: {
+                    indexAxis: 'y', // Mengubah menjadi horizontal bar chart
+                    responsive: true, maintainAspectRatio: false,
+                    animation: { duration: 1500, easing: 'easeOutQuart' },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { 
+                            backgroundColor: '#1e293b', padding: 12, titleFont: { size: 13 }, bodyFont: { size: 14, weight: 'bold' }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true, border: {display: false},
+                            grid: { color: '#f1f5f9' },
+                            ticks: { stepSize: 1, precision: 0 }
+                        },
+                        y: { 
+                            grid: { display: false },
+                            ticks: { autoSkip: false } // Agar nama sekolah yang panjang tetap terbaca
+                        }
+                    }
+                }
+            });
+        }
+
         /* =========================================================
            7. FILTERING & PAGINATION LOGIC
            ========================================================= */
-        function populateFilters() {
-            const filterBulan = document.getElementById('filterBulan');
-            const filterKota = document.getElementById('filterKota');
+        function toggleDropdown(id) {
+            document.getElementById(id).classList.toggle('hidden');
+        }
 
-            // Simpan value saat ini agar tidak tereset saat auto-refresh
-            const currentBulan = filterBulan.value;
-            const currentKota = filterKota.value;
+        function populateFilters() {
+            const listBulan = document.getElementById('listBulan');
+            const listKota = document.getElementById('listKota');
 
             const months = [...new Set(globalData.map(item => item.bulan_setor).filter(Boolean))].sort();
             const cities = [...new Set(globalData.map(item => item.kota_kabupaten).filter(Boolean))].sort();
 
-            filterBulan.innerHTML = '<option value="">Semua Bulan</option>';
-            filterKota.innerHTML = '<option value="">Semua Wilayah</option>';
-
+            let htmlBulan = '';
             months.forEach(month => {
-                const isSelected = month === currentBulan ? 'selected' : '';
-                filterBulan.innerHTML += `<option value="${month}" ${isSelected}>${month}</option>`;
+                htmlBulan += `
+                    <label class="flex items-center space-x-3 text-sm text-slate-700 cursor-pointer p-2 hover:bg-slate-50 rounded-md transition-colors">
+                        <input type="checkbox" value="${month}" class="check-bulan rounded border-slate-300 text-brand-600 focus:ring-brand-500 w-4 h-4 cursor-pointer" onchange="applyFilters()">
+                        <span class="font-medium">${month}</span>
+                    </label>
+                `;
             });
+            listBulan.innerHTML = htmlBulan;
+
+            let htmlKota = '';
             cities.forEach(city => {
-                const isSelected = city === currentKota ? 'selected' : '';
-                filterKota.innerHTML += `<option value="${city}" ${isSelected}>${city}</option>`;
+                htmlKota += `
+                    <label class="flex items-center space-x-3 text-sm text-slate-700 cursor-pointer p-2 hover:bg-slate-50 rounded-md transition-colors">
+                        <input type="checkbox" value="${city}" class="check-kota rounded border-slate-300 text-brand-600 focus:ring-brand-500 w-4 h-4 cursor-pointer" onchange="applyFilters()">
+                        <span class="font-medium">${city}</span>
+                    </label>
+                `;
             });
+            listKota.innerHTML = htmlKota;
         }
 
         function resetFilters() {
             document.getElementById('searchInput').value = '';
-            document.getElementById('filterBulan').value = '';
-            document.getElementById('filterKota').value = '';
+            document.querySelectorAll('.check-bulan').forEach(cb => cb.checked = false);
+            document.querySelectorAll('.check-kota').forEach(cb => cb.checked = false);
             applyFilters();
         }
 
         function applyFilters() {
             const keyword = document.getElementById('searchInput').value.toLowerCase();
-            const selectedBulan = document.getElementById('filterBulan').value;
-            const selectedKota = document.getElementById('filterKota').value;
+            
+            // Ambil semua checkbox yang dicentang
+            const checkedBulan = Array.from(document.querySelectorAll('.check-bulan:checked')).map(cb => cb.value);
+            const checkedKota = Array.from(document.querySelectorAll('.check-kota:checked')).map(cb => cb.value);
+
+            // Update Label Tombol Dropdown
+            const labelBulan = document.getElementById('labelBulan');
+            if (checkedBulan.length === 0) labelBulan.textContent = 'Semua Bulan';
+            else if (checkedBulan.length === 1) labelBulan.textContent = checkedBulan[0];
+            else labelBulan.textContent = `${checkedBulan.length} Bulan dipilih`;
+
+            const labelKota = document.getElementById('labelKota');
+            if (checkedKota.length === 0) labelKota.textContent = 'Semua Wilayah';
+            else if (checkedKota.length === 1) labelKota.textContent = checkedKota[0];
+            else labelKota.textContent = `${checkedKota.length} Wilayah dipilih`;
 
             filteredData = globalData.filter(row => {
                 const searchStr = `${row.nama_penyetor || ''} ${row.nama_instansi || ''} ${row.kota_kabupaten || ''}`.toLowerCase();
                 const matchKeyword = searchStr.includes(keyword);
-                const matchBulan = selectedBulan === "" || row.bulan_setor === selectedBulan;
-                const matchKota = selectedKota === "" || row.kota_kabupaten === selectedKota;
+                
+                // Cek array jika ada pilihan, jika tidak maka tampilkan semua
+                const matchBulan = checkedBulan.length === 0 || checkedBulan.includes(row.bulan_setor);
+                const matchKota = checkedKota.length === 0 || checkedKota.includes(row.kota_kabupaten);
 
                 return matchKeyword && matchBulan && matchKota;
             });
 
             currentPage = 1;
-            renderTable();
+            // Panggil update komponen sehingga semua grafik dan card ter-update sesuai data terbaru
+            updateDashboardComponents(filteredData);
         }
 
         function renderTable() {
@@ -763,13 +893,26 @@
            8. EVENT LISTENERS
            ========================================================= */
         document.getElementById('searchInput').addEventListener('input', applyFilters);
-        document.getElementById('filterBulan').addEventListener('change', applyFilters);
-        document.getElementById('filterKota').addEventListener('change', applyFilters);
         
         document.getElementById('rowsPerPage').addEventListener('change', function(e) {
             rowsPerPage = parseInt(e.target.value);
             currentPage = 1; 
             renderTable();
+        });
+
+        // Event listener untuk menutup dropdown custom saat user mengklik di luar elemen
+        document.addEventListener('click', function(event) {
+            const wrapperBulan = document.getElementById('wrapperBulan');
+            const dropdownBulan = document.getElementById('dropdownBulan');
+            if (wrapperBulan && !wrapperBulan.contains(event.target)) {
+                dropdownBulan.classList.add('hidden');
+            }
+
+            const wrapperKota = document.getElementById('wrapperKota');
+            const dropdownKota = document.getElementById('dropdownKota');
+            if (wrapperKota && !wrapperKota.contains(event.target)) {
+                dropdownKota.classList.add('hidden');
+            }
         });
 
         /* =========================================================
