@@ -140,24 +140,8 @@
             </div>
 
             <!-- Top Stats Row -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
-                <!-- Stat Card 1 -->
-                <div class="premium-card rounded-2xl p-6 fade-in-up">
-                    <div class="flex justify-between items-start mb-4">
-                        <div>
-                            <p class="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-1">Total Terkumpul</p>
-                            <h3 class="text-3xl font-bold text-slate-900 tracking-tight" id="stat-total-zakat" data-value="0">Rp 0</h3>
-                        </div>
-                        <div class="bg-brand-50 p-3 rounded-xl border border-brand-100">
-                            <i class="fa-solid fa-sack-dollar text-xl text-brand-600"></i>
-                        </div>
-                    </div>
-                    <div class="flex items-center text-xs text-brand-600 font-medium bg-brand-50 w-fit px-2 py-1 rounded-md">
-                        <i class="fa-solid fa-arrow-trend-up mr-1.5"></i> Akumulasi 2026
-                    </div>
-                </div>
-
-                <!-- Stat Card 2 -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
+                <!-- Stat Card 1 (Penyetor) -->
                 <div class="premium-card rounded-2xl p-6 fade-in-up delay-100">
                     <div class="flex justify-between items-start mb-4">
                         <div>
@@ -173,7 +157,7 @@
                     </div>
                 </div>
 
-                <!-- Stat Card 3 -->
+                <!-- Stat Card 2 (Instansi) -->
                 <div class="premium-card rounded-2xl p-6 fade-in-up delay-200">
                     <div class="flex justify-between items-start mb-4">
                         <div>
@@ -189,7 +173,7 @@
                     </div>
                 </div>
 
-                <!-- Stat Card 4 -->
+                <!-- Stat Card 3 (Wilayah) -->
                 <div class="premium-card rounded-2xl p-6 fade-in-up delay-300">
                     <div class="flex justify-between items-start mb-4">
                         <div>
@@ -203,42 +187,6 @@
                     <div class="flex items-center text-xs text-slate-500 font-medium">
                         Kota/Kabupaten jangkauan
                     </div>
-                </div>
-            </div>
-
-            <!-- Charts Row -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                <!-- Bar Chart -->
-                <div class="premium-card rounded-2xl p-6 lg:col-span-2 fade-in-up delay-200">
-                    <div class="mb-6">
-                        <h2 class="text-lg font-bold text-slate-900">Tren Zakat per Bulan</h2>
-                        <p class="text-sm text-slate-500">Akumulasi nominal setoran berdasarkan bulan</p>
-                    </div>
-                    <div class="relative h-72 w-full">
-                        <canvas id="chartBulan"></canvas>
-                    </div>
-                </div>
-
-                <!-- Doughnut Chart -->
-                <div class="premium-card rounded-2xl p-6 fade-in-up delay-300 flex flex-col">
-                    <div class="mb-2">
-                        <h2 class="text-lg font-bold text-slate-900">Proporsi Wilayah</h2>
-                        <p class="text-sm text-slate-500">Distribusi berdasarkan Kota/Kab</p>
-                    </div>
-                    <div class="relative flex-1 w-full flex justify-center items-center min-h-[250px]">
-                        <canvas id="chartKota"></canvas>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Horizontal Bar Chart (Instansi) -->
-            <div class="premium-card rounded-2xl p-6 mb-8 fade-in-up delay-300">
-                <div class="mb-6">
-                    <h2 class="text-lg font-bold text-slate-900">Jumlah Pembayar per Sekolah/Instansi</h2>
-                    <p class="text-sm text-slate-500">Top 10 sekolah/lembaga dengan jumlah penyetor zakat terbanyak</p>
-                </div>
-                <div class="relative w-full h-80">
-                    <canvas id="chartInstansi"></canvas>
                 </div>
             </div>
 
@@ -297,7 +245,6 @@
                                 <th class="py-4 px-6">Identitas Penyetor</th>
                                 <th class="py-4 px-6">Instansi & Wilayah</th>
                                 <th class="py-4 px-6 text-center">Bulan</th>
-                                <th class="py-4 px-6 text-right">Nominal (Rp)</th>
                                 <th class="py-4 px-6 text-center">Bukti</th>
                             </tr>
                         </thead>
@@ -370,20 +317,13 @@
            ========================================================= */
         let globalData = [];
         let filteredData = [];
-        let chartBulanInstance = null;
-        let chartKotaInstance = null;
-        let chartInstansiInstance = null;
         let currentPage = 1;
         let rowsPerPage = 10;
-
-        const formatRupiah = (number) => {
-            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(number);
-        };
 
         /* =========================================================
            3. FUNGSI UTILITAS: ANIMASI ANGKA & EXPORT CSV
            ========================================================= */
-        function animateValue(obj, start, end, duration, isCurrency = false) {
+        function animateValue(obj, start, end, duration) {
             if (obj.animationId) cancelAnimationFrame(obj.animationId);
             
             let startTimestamp = null;
@@ -394,12 +334,12 @@
                 const easeOut = 1 - (1 - progress) * (1 - progress); 
                 const currentVal = Math.floor(easeOut * (end - start) + start);
                 
-                obj.innerHTML = isCurrency ? formatRupiah(currentVal) : currentVal;
+                obj.innerHTML = currentVal;
                 
                 if (progress < 1) {
                     obj.animationId = window.requestAnimationFrame(step);
                 } else {
-                    obj.innerHTML = isCurrency ? formatRupiah(end) : end;
+                    obj.innerHTML = end;
                     obj.dataset.value = end; // Simpan nilai akhir
                 }
             };
@@ -411,7 +351,7 @@
             
             // Header CSV
             let csvContent = "data:text/csv;charset=utf-8,";
-            csvContent += "Timestamp,Nama Penyetor,Kota/Kabupaten,Instansi,Tanggal Setor,Bulan Setor,Nominal Zakat\n";
+            csvContent += "Timestamp,Nama Penyetor,Kota/Kabupaten,Instansi,Tanggal Setor,Bulan Setor\n";
 
             // Baris Data
             filteredData.forEach(row => {
@@ -424,8 +364,7 @@
                     `"${row.kota_kabupaten || ''}"`,
                     `"${row.nama_instansi || ''}"`,
                     `"${formattedDate}"`,
-                    `"${row.bulan_setor || ''}"`,
-                    `"${row.zakat || 0}"`
+                    `"${row.bulan_setor || ''}"`
                 ];
                 csvContent += r.join(",") + "\n";
             });
@@ -481,215 +420,38 @@
            5. PEMROSESAN DATA UTAMA
            ========================================================= */
         function updateDashboardComponents(data) {
-            let totalZakat = 0;
             let instansiSet = new Set();
             let kotaSet = new Set();
             let penyetorSet = new Set();
-            
-            let dataPerBulan = { "JANUARI": 0, "FEBRUARI": 0, "MARET": 0, "APRIL": 0, "MEI": 0 };
-            let dataPerKota = {};
-            let penyetorPerInstansi = {};
 
             data.forEach(row => {
-                const zakat = parseInt(row.zakat) || 0;
-                totalZakat += zakat;
-                
                 if(row.nama_instansi) {
                     let instansi = row.nama_instansi.trim();
                     instansiSet.add(instansi);
-                    if(row.nama_penyetor) {
-                        penyetorPerInstansi[instansi] = (penyetorPerInstansi[instansi] || 0) + 1;
-                    }
                 }
                 
                 if(row.kota_kabupaten) {
                     let kota = row.kota_kabupaten.trim();
                     kotaSet.add(kota);
-                    dataPerKota[kota] = (dataPerKota[kota] || 0) + zakat;
                 }
                 if(row.nama_penyetor) penyetorSet.add(row.nama_penyetor.trim());
-
-                if(row.bulan_setor) {
-                    let bln = row.bulan_setor.trim().toUpperCase();
-                    if(dataPerBulan[bln] !== undefined) {
-                        dataPerBulan[bln] += zakat;
-                    } else {
-                        dataPerBulan[bln] = zakat; 
-                    }
-                }
             });
 
             // Update Statistik Top Cards dengan Animasi
-            const elZakat = document.getElementById('stat-total-zakat');
             const elPenyetor = document.getElementById('stat-total-penyetor');
             const elInstansi = document.getElementById('stat-total-instansi');
             const elKota = document.getElementById('stat-total-kota');
 
-            const startZakat = parseInt(elZakat.dataset.value) || 0;
             const startPenyetor = parseInt(elPenyetor.dataset.value) || 0;
             const startInstansi = parseInt(elInstansi.dataset.value) || 0;
             const startKota = parseInt(elKota.dataset.value) || 0;
 
-            animateValue(elZakat, startZakat, totalZakat, 800, true);
-            animateValue(elPenyetor, startPenyetor, penyetorSet.size, 800, false);
-            animateValue(elInstansi, startInstansi, instansiSet.size, 800, false);
-            animateValue(elKota, startKota, kotaSet.size, 800, false);
-
-            // Render Grafik
-            renderChartBulan(dataPerBulan);
-            renderChartKota(dataPerKota);
-            renderChartInstansi(penyetorPerInstansi);
+            animateValue(elPenyetor, startPenyetor, penyetorSet.size, 800);
+            animateValue(elInstansi, startInstansi, instansiSet.size, 800);
+            animateValue(elKota, startKota, kotaSet.size, 800);
 
             // Eksekusi Render Tabel
             renderTable();
-        }
-
-        /* =========================================================
-           6. RENDER CHART (CHART.JS)
-           ========================================================= */
-        function renderChartBulan(dataPerBulan) {
-            const ctx = document.getElementById('chartBulan').getContext('2d');
-            
-            // Filter bulan yang tidak ada nilainya jika diinginkan, tapi tampilkan semua juga baik untuk timeline
-            const labels = Object.keys(dataPerBulan);
-            const values = Object.values(dataPerBulan);
-
-            if(chartBulanInstance) chartBulanInstance.destroy();
-
-            let gradient = ctx.createLinearGradient(0, 0, 0, 300);
-            gradient.addColorStop(0, 'rgba(16, 185, 129, 0.9)'); // Brand 500
-            gradient.addColorStop(1, 'rgba(16, 185, 129, 0.1)');
-
-            chartBulanInstance = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Total Zakat',
-                        data: values,
-                        backgroundColor: gradient,
-                        hoverBackgroundColor: '#059669',
-                        borderRadius: 6,
-                        barPercentage: 0.5
-                    }]
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    animation: { duration: 1500, easing: 'easeOutQuart' },
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: { 
-                            backgroundColor: '#1e293b', padding: 12, titleFont: { size: 13 }, bodyFont: { size: 14, weight: 'bold' },
-                            callbacks: { label: (c) => formatRupiah(c.raw) } 
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true, border: {display: false},
-                            grid: { color: '#f1f5f9' },
-                            ticks: { callback: (v) => v/1000 + 'K' }
-                        },
-                        x: { grid: { display: false } }
-                    }
-                }
-            });
-        }
-
-        function renderChartKota(dataPerKota) {
-            const ctx = document.getElementById('chartKota').getContext('2d');
-            
-            // Sort data untuk visual yang lebih baik (Terbesar ke terkecil)
-            let sortedArr = Object.entries(dataPerKota).sort((a,b) => b[1] - a[1]);
-            const labels = sortedArr.map(item => item[0]);
-            const values = sortedArr.map(item => item[1]);
-            
-            // Palette modern
-            const colors = ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#64748b'];
-
-            if(chartKotaInstance) chartKotaInstance.destroy();
-
-            chartKotaInstance = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: values, 
-                        backgroundColor: colors.slice(0, labels.length), 
-                        borderWidth: 2, borderColor: '#ffffff', hoverOffset: 8
-                    }]
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false, cutout: '65%',
-                    animation: { animateScale: true, animateRotate: true, duration: 1500 },
-                    plugins: {
-                        legend: { position: 'right', labels: { usePointStyle: true, padding: 15, boxWidth: 8 } },
-                        tooltip: { 
-                            backgroundColor: '#1e293b', padding: 12,
-                            callbacks: { label: (c) => ' ' + formatRupiah(c.raw) } 
-                        }
-                    }
-                }
-            });
-        }
-
-        function renderChartInstansi(dataObj) {
-            const ctx = document.getElementById('chartInstansi').getContext('2d');
-            
-            // Sort data untuk visualisasi Top 10 instansi terbanyak
-            let sortedArr = Object.entries(dataObj).sort((a,b) => b[1] - a[1]).slice(0, 10);
-            const labels = sortedArr.map(item => item[0]);
-            const values = sortedArr.map(item => item[1]);
-
-            if(chartInstansiInstance) chartInstansiInstance.destroy();
-
-            // Kombinasi palet warna modern yang berbeda untuk setiap bar
-            const baseColors = [
-                'rgba(59, 130, 246, 0.85)', 'rgba(16, 185, 129, 0.85)', 'rgba(245, 158, 11, 0.85)', 
-                'rgba(239, 68, 68, 0.85)', 'rgba(139, 92, 246, 0.85)', 'rgba(6, 182, 212, 0.85)', 
-                'rgba(236, 72, 153, 0.85)', 'rgba(249, 115, 22, 0.85)', 'rgba(20, 184, 166, 0.85)', 
-                'rgba(99, 102, 241, 0.85)'
-            ];
-            const hoverColors = [
-                '#2563eb', '#059669', '#d97706', '#dc2626', '#7c3aed',
-                '#0891b2', '#db2777', '#ea580c', '#0d9488', '#4f46e5'
-            ];
-
-            chartInstansiInstance = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Jumlah Penyetor',
-                        data: values,
-                        backgroundColor: baseColors.slice(0, labels.length),
-                        hoverBackgroundColor: hoverColors.slice(0, labels.length),
-                        borderRadius: 6,
-                        barPercentage: 0.6
-                    }]
-                },
-                options: {
-                    indexAxis: 'y', // Mengubah menjadi horizontal bar chart
-                    responsive: true, maintainAspectRatio: false,
-                    animation: { duration: 1500, easing: 'easeOutQuart' },
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: { 
-                            backgroundColor: '#1e293b', padding: 12, titleFont: { size: 13 }, bodyFont: { size: 14, weight: 'bold' }
-                        }
-                    },
-                    scales: {
-                        x: {
-                            beginAtZero: true, border: {display: false},
-                            grid: { color: '#f1f5f9' },
-                            ticks: { stepSize: 1, precision: 0 }
-                        },
-                        y: { 
-                            grid: { display: false },
-                            ticks: { autoSkip: false } // Agar nama sekolah yang panjang tetap terbaca
-                        }
-                    }
-                }
-            });
         }
 
         /* =========================================================
@@ -812,9 +574,6 @@
                     </td>
                     <td class="py-3.5 px-6 text-center">
                         <span class="font-semibold text-brand-700 bg-brand-50 px-3 py-1 rounded-full text-xs">${row.bulan_setor || '-'}</span>
-                    </td>
-                    <td class="py-3.5 px-6 text-right">
-                        <span class="font-bold text-emerald-600 text-base">${formatRupiah(row.zakat)}</span>
                     </td>
                     <td class="py-3.5 px-6 text-center">
                         ${hasLink ? 
